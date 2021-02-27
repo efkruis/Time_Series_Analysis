@@ -1,0 +1,734 @@
+---
+title: "Assignment: Forecasting Job Interest with Time Series Analysis"
+author: "Emma Kruis"
+date: "2020-01-11"
+output:
+  pdf_document: default
+  word_document: default
+  html_notebook: default
+  html_document:
+    df_print: paged
+editor_options:
+  chunk_output_type: console
+---
+
+## Instructions
+
+This assignment reviews the *Time Series Analysis* content. 
+You will use the *time_series.Rmd* file I reviewed as part of the lectures for this week to complete this assignment. 
+You will *copy and paste* relevant code from that file and update it to answer the questions in this assignment. 
+You will respond to questions in each section after executing relevant code to answer a question. 
+You will submit this assignment to its *Submissions* folder on *D2L*.
+You will submit *two* files:
+
+1. this completed *R Markdown* script, and 
+2. as a first preference, a *PDF* (if you already installed `TinyTeX` properly), as a second preference, a *Microsfot Word* (if your computer has *Microsoft Word*) document, or, as a third preference, an *HTML* (if you did *not* install `TinyTeX` properly and your computer does *not* have *Microsoft Word*) file to *D2L*.
+
+To start:
+
+First, create a folder on your computer to save all relevant files for this course. 
+If you did not do so already, you will want to create a folder named *mgt_592* that contains all of the materials for this course.
+
+Second, inside of *mgt_592*, you will create a folder to host assignments.
+You can name that folder *assignments*.
+
+Third, inside of *assignments*, you will create folders for each assignment.
+You can name the folder for this first assignment: *time_series*.
+
+Fourth, create three additional folders in *time_series* named *scripts*, *data*, and *plots*.
+Store this script in the *scripts* folder and the data for this assignment in the *data* folder.
+
+Fifth, go to the *File* menu in *RStudio*, select *New Project...*, choose *Existing Directory*, go to your *~/mgt_592/assignments/time_series* folder to select it as the top-level directory for this **R Project**.  
+
+## Global Settings
+
+The first code chunk sets the global settings for the remaining code chunks in the document.
+Do *not* change anything in this code chunk.
+
+```{r, setup, include = FALSE}
+### specify echo setting for all code chunks
+## call function
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load Packages
+
+In this code chunk, we load the following packages:
+
+1. **here**,
+2. **tidyverse**,
+3. **skimr**, 
+4. **flextable**,
+5. **lubridate**,
+6. **tidymodels**,
+7. **timetk**,
+8. **modeltime**, and
+9. **modeltime.ensemble**.
+
+Make sure you installed these packages when you reviewed the analytical lecture.
+
+We will use functions from these packages to examine the data. 
+Do *not* change anything in this code chunk.
+
+```{r, libraries, message = FALSE}
+### load libraries for use in current working session
+## here for project work flow
+library(here)
+
+## tidyverse for data manipulation and plotting
+## loads eight different libraries simultaneously
+library(tidyverse)
+
+## skimr to summarize data
+library(skimr)
+
+## flextable for creating tables
+library(flextable)
+
+## lubridate to work with dates
+library(lubridate)
+
+## tidymodels for modeling flow
+library(tidymodels)
+
+## timetk for time series data manipulation
+library(timetk)
+
+## modeltime for time series models
+library(modeltime)
+
+## modeltime.ensemble to combine time series models
+library(modeltime.ensemble)
+```
+
+## Task 1: Import Data
+
+We will use the same data as in the analytical lecture: **job_interest_search.rds**.
+After you load the data, then you will execute other commands on the data.
+
+### Task 1.1
+
+Use the **readRDS()** and **here()** functions to load the data file for this working session from the project **data** folder. 
+Save the data as the object **interest_raw**. 
+Apply **str()** to the list object.
+
+Use **pluck()** to extract the **interest_over_time** element from the **interest_raw** list.
+Use **slice_tail()** to view the last **7** rows of the data table.
+
+**Questions 1.1**: Answer these questions:
+(1) How many top-level list elements are there in **interest_raw**?
+(2) What *geography* (**geo**) are the last *seven* rows?
+(3) What is the *relative interest* (**hits**) value for the *November* date?
+
+**Responses 1.1**: *(1) 7 top-level list elements in interest_raw; (2) the geo is AU for the last 7 rows; (3) 43*.
+
+```{r, task1_1}
+interest_raw <- readRDS(
+  here("data", "job_interest_search.rds"))
+
+str(interest_raw)
+
+interest_raw %>%
+  pluck("interest_over_time") %>%
+  slice_tail(n=7)
+```
+
+
+## Task 2: Clean and Prepare Data
+
+For this task, you will clean and prepare the data.
+
+### Task 2.1
+
+Create a new **tibble** named **interest_work** from **interest_raw** in a single chained command with the following steps: 
+
+1. *pluck* the **interest_over_time** element from **interest_raw**,
+2. convert to a *tibble*,
+3. *select* **date**, **hits**, and **geo** variables,
+4. *mutate* **date** with **ymd()**, change **geo** to a *factor* variable and recode its levels to full country names, and 
+5. *rename* **hits** to **rel_interest** and **geo** to **country**.
+
+After creating **interest_work**, *arrange* the rows to view top **rel_interest** values.
+
+**Questions 2.1**: Answer these questions:
+(1) What *country* has the *high relative interest* value for people analytics?
+(2) What is the *highest relative interest* value for *India*?
+
+**Responses 2.1**: *(1) Australia; (2) 70*.
+
+```{r, task2_1}
+interest_work <- interest_raw %>%
+  pluck("interest_over_time") %>%
+  as_tibble() %>%
+  select(date, hits, geo) %>%
+  mutate(
+    date = ymd(date),
+    geo = as_factor(geo),
+    geo = fct_recode(
+      geo,
+      # USA
+      "United States of America" = "US",
+      # India
+      "India" = "IN",
+      # Great Britain
+      "Great Britain" = "GB",
+      # Australia
+      "Australia" = "AU",
+      # Brazil
+      "Brazil" = "BR"
+      )
+    ) %>%
+  rename(
+    rel_interest = hits,
+    country = geo
+    )
+
+##preview 
+interest_work %>%
+  arrange(desc(rel_interest))
+```
+
+## Task 3: Examine Data
+
+For this task, you will examine the data.
+
+### Task 3.1
+
+Summarize **interest_work** by: 
+
+1. grouping by *country*,
+2. selecting **rel_interest**, and
+3. applying **skim_without_charts()**.
+ 
+**Questions 3.1**: Answer these questions:
+(1) Which *country* has the *highest median relative interest* value?
+(2) Which *country* has the *smallest range* from smallest to highest *relative interset* value?
+
+**Responses 3.1**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+
+```{r, task3_1}
+interest_work %>%
+  group_by(country) %>%
+  select(rel_interest) %>%
+  skim_without_charts()
+
+
+```
+
+### Task 3.2
+
+Plot **interest_work** with **plot_time_series()** by specifying: 
+
+1. **date** as the *date* variable,
+2. **rel_interest** as the *value* variable,
+3. **country** as the *facet* variable and fixing the *scales* of the facets and creating *two* columns of facets,
+4. choosing the *year* of the *date* variable as the *color* variable,
+5. labeling the x-axis, y-axis, and legend and providing an appropriate title, and
+6. creating a static plot.
+ 
+**Questions 3.2**: Answer these questions:
+(1) Approximately, during which *year* did *Brazil* increase its search interest in people analytics?
+(2) During which *year* did *India* have the biggest spike in search interest for people analytics?
+(3) Has each country generally *increased* its search interest for people analytics over the years?
+
+**Responses 3.2**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+
+```{r, task3_2}
+interest_work %>%
+  plot_time_series(
+    .date_var = date,
+    .value = rel_interest,
+    .facet_vars = country,
+    .facet_scales = "fixed",
+    .facet_ncol = 2,
+    .color_var = year(date),
+    .x_lab = "Date",
+    .y_lab = "Relative Search Interest",
+    .color_lab = "Year",
+    .title = "Relative Search Interest by Country",
+    .interactive = FALSE)
+```
+
+### Task 3.3
+
+Plot **interest_work** with **plot_anomaly_diagnostics()** by specifying: 
+
+1. **date** as the *date* variable,
+2. **rel_interest** as the *value* variable,
+3. **country** as the *facet* variable and creating *two* columns of facets, and
+4. creating a static plot.
+
+**Question 3.3**: Which *country* has anomalies?
+
+**Response 3.3**: *Brazil has anomalies*.
+
+```{r, task3_3}
+interest_work %>%
+  plot_anomaly_diagnostics(
+    .date_var = date,
+    .value = rel_interest,
+    .facet_vars = country,
+    .facet_ncol = 2,
+    .interactive = FALSE
+)
+```
+
+### Task 3.4
+
+Plot **interest_work** with **plot_seasonal_diagnostics()** by specifying: 
+
+1. **date** as the *date* variable,
+2. **rel_interest** as the *value* variable,
+3. **country** as the *facet* variable, and
+4. creating a static plot.
+
+**Questions 3.4**: Answer these questions:
+(1) Does *Great Britain* have outliers for *December*?
+(2) Which *quarter* does *Australia* have an outlier?
+(3) Is the *median* search interest for people analytics for *Brazil* greater in *2019* or *2020*?
+
+**Responses 3.4**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+
+```{r, task3_4}
+interest_work %>%
+  plot_seasonal_diagnostics(
+    .date_var = date,
+    .value = rel_interest,
+    .facet_vars = country,
+    .interactive = FALSE)
+
+```
+
+### Task 3.5
+
+Group **interest_work** by **country** with **plot_acf_diagnostics()** by specifying: 
+
+1. **date** as the *date* variable,
+2. **rel_interest** as the *value* variable,
+3. set the *lag* to *2 years*,
+4. show the *white noise* bars, and
+5. creating a static plot.
+
+**Questions 3.5**: Answer these questions:
+(1) Which *two countries* show *high autocorrelations* values across lags?
+(2) Which *country* has the *smallest lag-one autocorrelation*?
+(3) Which *country* has the *highest lag-two partial autocorrelation*?
+
+**Responses 3.5**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+
+```{r, task3_5}
+interest_work %>%
+  group_by(country) %>%
+  plot_acf_diagnostics(
+    .date_var = date,
+    .value = rel_interest,
+    .lags = "2 years",
+    .show_white_noise_bars = TRUE,
+    .interactive = FALSE)
+```
+
+## Task 4: Time Series Validation
+
+For this task, you will create a validation plan for one time series.
+
+### Task 4.1
+
+Create a *data table* from **interest_work** consisting of only the time series for *Great Britain* using **filter()**.
+Name the data table **gb_ts**.
+
+Then, create a validation split object for **gb_ts** using **time_series_split()**.
+Set the *date* variable, **assess** to **18 months**, and **cumulative** to **TRUE**.
+Name the object **data_split**.
+
+Visualize the validation split by applying **tk_time_series_cv_plan()** and **plot_time_series_cv_plan()** to **data_split**.
+Set the plot to *interactive* mode.
+
+**Question 4.1**: On what exact *month* and *year* is the data split?
+
+**Response 4.1**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+
+```{r, task4_1}
+gb_ts <- interest_work %>%
+  filter(country == "Great Britain")
+
+data_split <- gb_ts %>%
+  time_series_split(
+    date_var = date,
+    assess = "18 months",
+    cumulative = TRUE)
+
+data_split %>%
+  tk_time_series_cv_plan() %>%
+  plot_time_series_cv_plan(
+    .date_var = date,
+    .value = rel_interest,
+    .interactive = TRUE)
+```
+
+## Task 5: Prepare Model Features
+
+For this task, you will compute featues based on the *date* variable.
+
+### Task 5.1
+
+Create a *recipe* named **recipe_spec** by:
+
+1. calling **recipe()** and setting the *formula* input to **rel_interest ~ date** and the *data* input to **trianing(data_split)**, 
+2. adding **date** features with **step_timeseries_signature()**,
+3. removing unnecessary features using **step_rm()** and an appropriate *regular expression* inside of **matches()**,
+4. normalizing the **date_index.num** and **date_year** features with **step_normalize()**, and
+5. one-hot encoding all factor variables with **step_dummy()**.
+
+Create a features data table named **model_features** by applying **prep()** and **bake(new_data = NULL)** to **recipe_spec**.
+Preview **model_features** with **glimpse()**
+
+**Questions 5.1**: Answer these questions:
+(1) How many *columns* are there in **model_features**?
+(2) Explain what the values in **date_month.lbl_05** indicate?
+
+**Responses 5.1**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+
+```{r, task5_1}
+recipe_spec <-
+  recipe(rel_interest ~ date, training(data_split)) %>%
+  step_timeseries_signature(date) %>%
+  step_rm(
+    matches("(.iso$)|(.xts$)|(week)|(day)|(hour)|(minute)|(second)|(am.pm)")
+  ) %>%
+  step_normalize(date_index.num, date_year) %>%
+  step_dummy(all_nominal(), one_hot = TRUE)
+
+model_features <- recipe_spec %>%
+  prep() %>%
+  bake(new_data = NULL)
+
+glimpse(model_features)
+```
+
+## Task 6: Time Series Models
+
+For this task, you will estimate a set of time series models.
+
+### Task 6.1
+
+Estimate an *exponential smoothing* model named **wrkflw_fit_ets** by:
+
+1. calling **workflow()**,
+2. using **add_model()** to call for a *exponential smoothing* specification and estimator,
+3. using **add_recipe()**, **recipe_spec**, and **step_rm()** to select only the **date** variable as a feature,
+4. using **fit()** to estimate on **training(data_split)**.
+
+View the estimated model.
+
+**Questions 6.1**: Answer these questions:
+(1) What is the *initial state* of the *level* (**l**)?
+(2) What is the *smoothing parameter* for the *trend* (**beta**)?
+(3) Is the *trend additive* or *multiplicative*?
+(4) Is there a *seasonality* component?
+
+**Responses 6.1**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+
+```{r, task6_1}
+wrkflw_fit_ets <- workflow() %>%
+  add_model(
+    exp_smoothing() %>%
+      set_engine(engine = "ets")
+  ) %>%
+  add_recipe(
+    recipe_spec %>%
+      step_rm(
+        all_predictors(),
+        -date) ) %>%
+  fit(training(data_split))
+
+```
+
+### Task 6.2
+
+Estimate an *ARIMA* model named **wrkflw_fit_arima** by:
+
+1. calling **workflow()**,
+2. using **add_model()** to call for a *ARIMA* specification and estimator,
+3. using **add_recipe()**, **recipe_spec**, and **step_rm()** to select only the **date** variable as a feature,
+4. using **fit()** to estimate on **training(data_split)**.
+
+View the estimated model.
+
+Estimate a *boosted ARIMA* model named **wrkflw_fit_arima_boost** by:
+
+1. calling **workflow()**,
+2. using **add_model()** to call for a *boosted ARIMA* specification and estimator,
+3. using **add_recipe()** and **recipe_spec** to select all features, and
+4. using **fit()** to estimate on **training(data_split)**.
+
+View the estimated model.
+
+**Questions 6.2**: Answer these questions:
+(1) Is there any difference in the estimated *ARIMA* of the two models?
+(2) What is the estimate of the *second autoregressive* parameter?
+(3) What is the estimate of the *first moving average* parameter?
+
+**Responses 6.2**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+
+```{r, task6_2}
+wrkflw_fit_arima <- workflow() %>%
+  add_model(
+    arima_reg() %>%
+      set_engine(engine = "auto_arima")
+  ) %>%
+  add_recipe(
+    recipe_spec %>%
+      step_rm(
+        all_predictors(),
+        -date
+        ) ) %>%
+  fit(training(data_split))
+
+wrkflw_fit_arima
+
+
+wrkflw_fit_arima_boost <- workflow() %>%
+  add_model(
+    arima_boost() %>%
+      set_engine(engine = "auto_arima_xgboost")
+  ) %>%
+  add_recipe(
+    recipe_spec
+  ) %>%
+  fit(training(data_split))
+
+wrkflw_fit_arima_boost
+```
+
+### Task 6.3
+
+Estimate an *prophet* model named **wrkflw_fit_prophet** by:
+
+1. calling **workflow()**,
+2. using **add_model()** to call for a *prophet* specification and estimator,
+3. using **add_recipe()**, **recipe_spec**, and **step_rm()** to select only the **date** variable as a feature,
+4. using **fit()** to estimate on **training(data_split)**.
+
+View the estimated model.
+
+Estimate a *boosted prophet* model named **wrkflw_fit_prophet_boost** by:
+
+1. calling **workflow()**,
+2. using **add_model()** to call for a *boosted ARIMA* specification and estimator,
+3. using **add_recipe()** and **recipe_spec** to select all features, and
+4. using **fit()** to estimate on **training(data_split)**.
+
+View the estimated model.
+
+**Questions 6.3**: Answer these questions:
+(1) What is the *growth* specification of the *prophet* model?
+(2) What is the *number of change points* (**n.changepoints**) specification of the *prophet* model?
+
+**Responses 6.3**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+
+```{r, task6_3}
+##prophet
+wrkflw_fit_prophet <- workflow() %>%
+  add_model(
+    prophet_reg() %>%
+      set_engine(engine = "prophet")
+    ) %>%
+  add_recipe(
+    recipe_spec %>%
+      step_rm(
+        all_predictors(),
+        -date
+        ) ) %>%
+  fit(training(data_split))
+
+wrkflw_fit_prophet
+
+
+##prophet boost
+wrkflw_fit_prophet_boost <- workflow() %>%
+  add_model(
+    prophet_boost() %>%
+      set_engine(engine = "prophet_xgboost")
+  ) %>%
+  add_recipe(
+    recipe_spec
+    ) %>%
+  fit(training(data_split))
+
+wrkflw_fit_prophet_boost
+```
+
+## Task 7: Evaluate Accuracy of Models
+
+For this task, you will evaluate the accuracy of estimated models.
+
+### Task 7.1
+
+Create a models table named **models_tbl** consisting of the five estimated models using **modeltime_table()**.
+Then, create an *equally-weighted ensemble* named **ensemble_set** from the models in **models_tbl** with **ensemble_average()**.
+Create a new models table named **ensemble_tbl** that incorporates the ensemble model applying **modeltime_table()** on **ensemble_set** and **combine_modeltime_tables()** on **models_tbl**.
+Then, calibrate all six models with the testing data using **modeltime_calibrate()** and name the result **models_calibrate**.
+Use **unnest()** on the **.calibration_data** column in **models_calibrate** and print all rows.
+
+**Questions 7.1**: Answer these questions:
+(1) What is the *ensemble* prediction for *2020-02-01*?
+(2) How *wrong* is the *prophet* prediction for *2020-06-01*?
+
+**Responses 7.1**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+
+```{r, task7_1}
+models_tbl <- modeltime_table(
+  wrkflw_fit_ets,
+  wrkflw_fit_arima,
+  wrkflw_fit_arima_boost,
+  wrkflw_fit_prophet,
+  wrkflw_fit_prophet_boost)
+
+
+ensemble_set <- models_tbl %>%
+  ensemble_average(type = "mean")
+ensemble_tbl <- modeltime_table(
+  ensemble_set
+) %>%
+  combine_modeltime_tables(models_tbl)
+
+  
+models_calibrate <- ensemble_tbl %>%
+  modeltime_calibrate(
+    testing(data_split)
+    )
+
+models_calibrate %>%
+  unnest(.calibration_data) %>%
+  print(n = Inf)
+```
+
+### Task 7.2
+
+Create a plot named **models_calibrate_plot** to visualize the predictions in **models_calibrate**.
+Apply **modeltime_forecast()** and set **new_data** to **testing(data_split)** and **actual_data** to **gb_ts**.
+Then, apply **plot_modeltime_forecast()** with *interactive* mode set to **TRUE**.
+Display the plot.
+
+Then, apply **modeltime_accuracy()** to **models_calibrate**.
+Apply **flextable()** with additional specifications to display the table in the **Viewer**.
+
+**Questions 7.2**: Answer these questions:
+(1) Describe the difference between the *prophet* and *boosted prophet* predictions using the interactive plot.
+(2) Describe the difference between the *ensemble*, *exponential smoothing*, and *ARIMA* predictions using the interactive plot.
+(3) What is the **mase** of the *boosted ARIMA*?
+(4) Based on **rmse**, which model performs the best?
+
+**Responses 7.2**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+
+```{r, task7_2}
+models_calibrate_plot <- models_calibrate %>%
+  modeltime_forecast(
+    new_data = testing(data_split),
+    actual_data = gb_ts
+  ) %>%
+  plot_modeltime_forecast(
+    .interactive = FALSE
+  )
+
+models_calibrate_plot
+
+
+models_calibrate %>%
+  modeltime_accuracy() %>%
+  flextable() %>%
+  bold(part = "header") %>%
+  bg(bg = "#D3D3D3", part = "header") %>%
+  autofit()
+```
+
+
+## Task 8: Refit Models and Forecast
+
+For this task, you will refit the models and forecast the future.
+
+### Task 8.1
+
+Refit the models in **models_calibrate** with **modeltime_refit()** and the **data** input set to **gb_ts**.
+Save the refit models as **models_refit**.
+
+Apply **modeltime_forecast()** to **models_refit** using **gb_ts** as the data to project *2 years* ahead with *85%* confidence intervals.
+Save the forecasts as **models_forecast**.
+
+Create a plot named **models_forecast_plot** to visualize the predictions in **models_forecast**.
+Apply **plot_modeltime_forecast()** with *interactive* mode set to **TRUE**.
+Display the plot.
+
+**Questions 8.1**:  Answer these questions:
+(1) Describe the difference between the *prophet* and *boosted prophet* forecasts using the interactive plot.
+(2) Describe the difference between the *ensemble*, *exponential smoothing*, *ARIMA*, and *boosted ARIMA* forecasts using the interactive plot.
+
+**Responses 8.1**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+
+```{r, task8_1}
+models_refit <- models_calibrate %>%
+  modeltime_refit(
+    data = gb_ts
+    )
+
+models_forecast <- models_refit %>%
+  modeltime_forecast(
+    h = "2 years",
+    actual_data = gb_ts,
+    conf_interval = 0.85
+  )
+
+models_forecast_plot <- models_forecast %>%
+  plot_modeltime_forecast(
+    .interactive = TRUE
+  )
+
+models_forecast_plot
+```
+
+## Task 9: Save Plots and Data
+
+For this task, you will save the plots and the working data.
+
+### Task 9.1
+
+Save the working data, **interest_work** as the data file: **interest_work.rds** in the **data** folder of the project directory using **saveRDS()**.
+
+Save the two plot objects as **png** files in the **plots** folder of the project directory.
+Make sure to create the plots again by setting the *interactive* mode to **FALSE**.
+Save **models_calibrate_plot** as **models_calibrate.png** and **models_forecast_plot** as **models_calibrate.png**.
+Use a width of *9 inches* and height of *6 inches* for all plots.
+
+```{r, task9_1}
+saveRDS(
+  interest_work,
+  file = here("data", "interest_work.rds"))
+
+ggsave(
+  here("plots", "models_calibrate.png"),
+  plot = models_calibrate_plot,
+  units = "in", width = 9, height = 6)
+
+ggsave(
+  here("plots", "models_forecast.png"),
+  plot = models_forecast_plot,
+  units = "in", width = 9, height = 6)
+```
+
+## Task 10: Conceptual Questions
+
+For your last task, you will respond to conceptual questions based on the conceptual lectures for this week.
+
+**Question 10.1**: For an *ARIMA(3, 1, 2)* model, answer these questions:
+(1) Was the the time series was differenced? 
+(2) What model parameters were estimated for the time series?
+
+**Response 10.1**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+
+**Question 10.2**: What is the difference between an *autocorrelation* and a *partial autocorrelation*?
+
+**Response 10.2**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+
+**Question 10.3**: Describe the process of an *additive* classical decomposition of a time series.
+
+**Response 10.3**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
