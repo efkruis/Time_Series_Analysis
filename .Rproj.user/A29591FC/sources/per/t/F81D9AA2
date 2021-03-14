@@ -1,26 +1,26 @@
 {
-    "collab_server" : "",
-    "contents" : "",
-    "created" : 1614110894762.000,
-    "dirty" : false,
-    "encoding" : "UTF-8",
-    "folds" : "",
-    "hash" : "1311218819",
-    "id" : "F81D9AA2",
-    "lastKnownWriteTime" : 1614308210,
-    "last_content_update" : 1614308210598,
-    "path" : "~/Library/Mobile Documents/com~apple~CloudDocs/year_2/WQ21/mgt_592/assignments/Time_Series_Analysis/Scripts/time_series_assignment.rmd",
-    "project_path" : "Scripts/time_series_assignment.rmd",
-    "properties" : {
-        "chunk_output_type" : "console",
-        "cursorPosition" : "714,37",
-        "scrollLine" : "698"
+    "id": "F81D9AA2",
+    "path": "~/Library/Mobile Documents/com~apple~CloudDocs/year_2/WQ21/mgt_592/assignments/Time_Series_Analysis/Scripts/time_series_assignment.rmd",
+    "project_path": "Scripts/time_series_assignment.rmd",
+    "type": "r_markdown",
+    "hash": "3582812290",
+    "contents": "",
+    "dirty": false,
+    "created": 1614110894762.0,
+    "source_on_save": false,
+    "relative_order": 2,
+    "properties": {
+        "chunk_output_type": "console",
+        "cursorPosition": "619,40",
+        "scrollLine": "610",
+        "Source": "Source"
     },
-    "read_only" : false,
-    "read_only_alternatives" : [
-    ],
-    "relative_order" : 2,
-    "source_on_save" : false,
-    "source_window" : "",
-    "type" : "r_markdown"
+    "folds": "",
+    "lastKnownWriteTime": 1615647638,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1615647638202,
+    "read_only": false,
+    "read_only_alternatives": []
 }

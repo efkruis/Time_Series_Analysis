@@ -120,7 +120,7 @@ Use **slice_tail()** to view the last **7** rows of the data table.
 (2) What *geography* (**geo**) are the last *seven* rows?
 (3) What is the *relative interest* (**hits**) value for the *November* date?
 
-**Responses 1.1**: *(1) 7 top-level list elements in interest_raw; (2) the geo is AU for the last 7 rows; (3) 43*.
+**Responses 1.1**: *(1) There are 7 top-level list elements in interest_raw; (2) AU; (3) 43 *.
 
 ```{r, task1_1}
 interest_raw <- readRDS(
@@ -154,7 +154,7 @@ After creating **interest_work**, *arrange* the rows to view top **rel_interest*
 (1) What *country* has the *high relative interest* value for people analytics?
 (2) What is the *highest relative interest* value for *India*?
 
-**Responses 2.1**: *(1) Australia; (2) 70*.
+**Responses 2.1**: *(1) Australia ; (2) 70*.
 
 ```{r, task2_1}
 interest_work <- interest_raw %>%
@@ -204,14 +204,13 @@ Summarize **interest_work** by:
 (1) Which *country* has the *highest median relative interest* value?
 (2) Which *country* has the *smallest range* from smallest to highest *relative interset* value?
 
-**Responses 3.1**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+**Responses 3.1**: *(1) The country with the highest median relative interest value is Great Britain . (2) The country with the smallest range from smallest to highest relative interest is India.*.
 
 ```{r, task3_1}
 interest_work %>%
   group_by(country) %>%
   select(rel_interest) %>%
   skim_without_charts()
-
 
 ```
 
@@ -231,7 +230,7 @@ Plot **interest_work** with **plot_time_series()** by specifying:
 (2) During which *year* did *India* have the biggest spike in search interest for people analytics?
 (3) Has each country generally *increased* its search interest for people analytics over the years?
 
-**Responses 3.2**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+**Responses 3.2**: *(1) 2018 (2) 2020 (3) yes*.
 
 ```{r, task3_2}
 interest_work %>%
@@ -287,7 +286,7 @@ Plot **interest_work** with **plot_seasonal_diagnostics()** by specifying:
 (2) Which *quarter* does *Australia* have an outlier?
 (3) Is the *median* search interest for people analytics for *Brazil* greater in *2019* or *2020*?
 
-**Responses 3.4**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+**Responses 3.4**: *(1) No (2) Quarter 3 (3) 2019*.
 
 ```{r, task3_4}
 interest_work %>%
@@ -314,7 +313,7 @@ Group **interest_work** by **country** with **plot_acf_diagnostics()** by specif
 (2) Which *country* has the *smallest lag-one autocorrelation*?
 (3) Which *country* has the *highest lag-two partial autocorrelation*?
 
-**Responses 3.5**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+**Responses 3.5**: *(1)United States and Brazil (2) Great Britain (3) Brazil*.
 
 ```{r, task3_5}
 interest_work %>%
@@ -345,7 +344,7 @@ Set the plot to *interactive* mode.
 
 **Question 4.1**: On what exact *month* and *year* is the data split?
 
-**Response 4.1**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+**Response 4.1**: *June 2019*.
 
 ```{r, task4_1}
 gb_ts <- interest_work %>%
@@ -362,7 +361,7 @@ data_split %>%
   plot_time_series_cv_plan(
     .date_var = date,
     .value = rel_interest,
-    .interactive = TRUE)
+    .interactive = FALSE)
 ```
 
 ## Task 5: Prepare Model Features
@@ -386,7 +385,7 @@ Preview **model_features** with **glimpse()**
 (1) How many *columns* are there in **model_features**?
 (2) Explain what the values in **date_month.lbl_05** indicate?
 
-**Responses 5.1**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+**Responses 5.1**: *(1) 19 (2) Indicate what month it is. Therefore 05 is May which is why it has a 1 in the 5th column.*.
 
 ```{r, task5_1}
 recipe_spec <-
@@ -426,7 +425,7 @@ View the estimated model.
 (3) Is the *trend additive* or *multiplicative*?
 (4) Is there a *seasonality* component?
 
-**Responses 6.1**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+**Responses 6.1**: *(1) 13.4164 (2) 1e-04 (3) Additive (4) No seasonality*.
 
 ```{r, task6_1}
 wrkflw_fit_ets <- workflow() %>%
@@ -468,7 +467,7 @@ View the estimated model.
 (2) What is the estimate of the *second autoregressive* parameter?
 (3) What is the estimate of the *first moving average* parameter?
 
-**Responses 6.2**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+**Responses 6.2**: *(1) No there is no difference (2) 0.2104 (3) -0.9353*.
 
 ```{r, task6_2}
 wrkflw_fit_arima <- workflow() %>%
@@ -524,7 +523,7 @@ View the estimated model.
 (1) What is the *growth* specification of the *prophet* model?
 (2) What is the *number of change points* (**n.changepoints**) specification of the *prophet* model?
 
-**Responses 6.3**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+**Responses 6.3**: *(1) linear (2) 25*.
 
 ```{r, task6_3}
 ##prophet
@@ -574,7 +573,7 @@ Use **unnest()** on the **.calibration_data** column in **models_calibrate** and
 (1) What is the *ensemble* prediction for *2020-02-01*?
 (2) How *wrong* is the *prophet* prediction for *2020-06-01*?
 
-**Responses 7.1**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+**Responses 7.1**: *(1) 37.7 (2) it was wrong by -11.5*.
 
 ```{r, task7_1}
 models_tbl <- modeltime_table(
@@ -587,6 +586,7 @@ models_tbl <- modeltime_table(
 
 ensemble_set <- models_tbl %>%
   ensemble_average(type = "mean")
+
 ensemble_tbl <- modeltime_table(
   ensemble_set
 ) %>%
@@ -619,7 +619,7 @@ Apply **flextable()** with additional specifications to display the table in the
 (3) What is the **mase** of the *boosted ARIMA*?
 (4) Based on **rmse**, which model performs the best?
 
-**Responses 7.2**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+**Responses 7.2**: *(1) The prophet predictions are more conservative than the  boosted prophet predictions which have a wider range (2) the ARIMA predictions are a straight line. Similarly, the exponential smoothing predictions are a straight line. The ensemble predictions have a slightly larger range (3) 0.8652633 (4) The boosted ARIMA*.
 
 ```{r, task7_2}
 models_calibrate_plot <- models_calibrate %>%
@@ -630,6 +630,7 @@ models_calibrate_plot <- models_calibrate %>%
   plot_modeltime_forecast(
     .interactive = FALSE
   )
+
 
 models_calibrate_plot
 
@@ -663,7 +664,7 @@ Display the plot.
 (1) Describe the difference between the *prophet* and *boosted prophet* forecasts using the interactive plot.
 (2) Describe the difference between the *ensemble*, *exponential smoothing*, *ARIMA*, and *boosted ARIMA* forecasts using the interactive plot.
 
-**Responses 8.1**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+**Responses 8.1**: *(1)The prophet was higher that the boosted prohpet. The boosted prohphet also had a wider range of predictions (2)The exponential smoothing predictions were straight. The ARIMA predictions had a wide range of predictions but the smoothed out. The boosted ARIMA had the greatest range of predicitons. The ensemble had a wide range of predicitons but not as signifcant range as the boosted ARIMA predicitons.*.
 
 ```{r, task8_1}
 models_refit <- models_calibrate %>%
@@ -680,7 +681,7 @@ models_forecast <- models_refit %>%
 
 models_forecast_plot <- models_forecast %>%
   plot_modeltime_forecast(
-    .interactive = TRUE
+    .interactive = FALSE
   )
 
 models_forecast_plot
@@ -723,12 +724,12 @@ For your last task, you will respond to conceptual questions based on the concep
 (1) Was the the time series was differenced? 
 (2) What model parameters were estimated for the time series?
 
-**Response 10.1**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+**Response 10.1**: *(1) yes the time series was differenced (2) ARIMA(3, 1, 2) Autoregressive order is 3, Degree of Integration is 1, and Moving Average is 2.*.
 
 **Question 10.2**: What is the difference between an *autocorrelation* and a *partial autocorrelation*?
 
-**Response 10.2**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+**Response 10.2**: *An autocorrelation is the relationship of an observation taking into account both the direct and indirect observations. in other words it is the linear relationship between lagged values of a time series. The partial auto correlation controls for the indirect observations. It is the linear relationship between lagged values of a time series after accounting for any intermediary lags*.
 
 **Question 10.3**: Describe the process of an *additive* classical decomposition of a time series.
 
-**Response 10.3**: *WRITE YOUR ANSWER BETWEEN THESE ASTERISKS*.
+**Response 10.3**: *model time series (y) = seasonal component (s) + the trend cycle component (t) + the remainder component (rT); first compute the trend-cylce component with amoving average, next compute the detrendeding time series (y-t), then compute the seasonal component from detrended time series by averaging detrended values for that season, compute the regular component (y-t-s). *.

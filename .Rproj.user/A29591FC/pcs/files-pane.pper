@@ -1,9 +1,9 @@
 {
-    "path" : "~/Library/Mobile Documents/com~apple~CloudDocs/year_2/WQ21/mgt_592/assignments/Time_Series_Analysis/Data",
-    "sortOrder" : [
+    "path": "~/Library/Mobile Documents/com~apple~CloudDocs/year_2/WQ21/mgt_592/assignments/Time_Series_Analysis/Data",
+    "sortOrder": [
         {
-            "ascending" : true,
-            "columnIndex" : 2
+            "columnIndex": 2,
+            "ascending": true
         }
     ]
 }
